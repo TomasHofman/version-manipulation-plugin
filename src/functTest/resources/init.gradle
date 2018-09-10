@@ -1,0 +1,13 @@
+initscript {
+    repositories {
+        mavenLocal()
+    }
+
+    dependencies {
+        classpath "org.jboss.set.gradle:version-manipulation-plugin4:1.0-SNAPSHOT"
+    }
+}
+
+allprojects {
+    apply plugin: org.jboss.set.gradle4.versionmanipulation.VersionManipulationPlugin
+}

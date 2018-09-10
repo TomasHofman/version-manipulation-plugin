@@ -1,0 +1,6 @@
+ext {
+    jbossLoggingVersion = '3.3.1.Final' // -redhat-1
+    jbossLoggingAnnotationsVersion = '2.0.1.Final' // -redhat-1
+    commonsCollectionsVersion = '3.2.1' // .redhat-7
+    undertowVersion = '1.4.11.Final' // -redhat-1
+}

@@ -1,0 +1,73 @@
+buildscript {
+    // TODO: lost track of which repos are needed
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven { url 'https://plugins.gradle.org/m2/' }
+        maven { url 'http://repo.spring.io/plugins-release/' }
+    }
+}
+
+plugins {
+    id 'maven' // for publishing to local maven repo
+    id 'java-gradle-plugin' // applies "java" plugin and adds gradleApi() to dependencies
+}
+
+group 'org.jboss.set.gradle'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    jcenter()
+    maven { url 'http://repo.spring.io/plugins-release/' }
+}
+
+ext {
+    jbossLoggingVersion = "3.3.2.Final"
+    mavenVersion = "3.0.4"
+}
+
+dependencies {
+    compile localGroovy()
+    compile "org.apache.maven:maven-model:$mavenVersion"
+
+    compile "org.jboss.logging:jboss-logging:$jbossLoggingVersion"
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile gradleTestKit()
+    testCompile "org.apache.maven:maven-model:3.5.4"
+}
+
+// defines plugin descriptor
+gradlePlugin {
+    plugins {
+        versionManipulationPlugin {
+            id = 'org.jboss.set.gradle4.version-manipulation'
+            implementationClass = 'org.jboss.set.gradle4.versionmanipulation.VersionManipulationPlugin'
+        }
+    }
+}
+
+// defines separate source set and task for functional tests
+
+sourceSets {
+    functionalTest {
+        java.srcDir file('src/functTest/java')
+        resources.srcDir file('src/functTest/resources')
+        compileClasspath += sourceSets.main.output + configurations.testRuntime
+        runtimeClasspath += output + compileClasspath
+    }
+}
+
+task functionalTest(type: Test) {
+    description = 'Runs functional tests'
+    group = 'verification'
+    testClassesDirs = sourceSets.functionalTest.output.classesDirs
+    classpath = sourceSets.functionalTest.runtimeClasspath
+    mustRunAfter test
+}
+
+check.dependsOn functionalTest
