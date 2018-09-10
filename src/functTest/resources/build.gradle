@@ -8,7 +8,7 @@ plugins {
 apply from: './libraries.gradle'
 
 group 'org.jboss.set.gradle44'
-version '1.0-SNAPSHOT'
+version '1.0-beta-1'
 
 sourceCompatibility = 1.8
 
