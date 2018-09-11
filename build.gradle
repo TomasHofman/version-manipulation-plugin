@@ -9,7 +9,7 @@ buildscript {
 }
 
 plugins {
-    id 'maven' // for publishing to local maven repo
+    id 'maven-publish'
     id 'java-gradle-plugin' // applies "java" plugin and adds gradleApi() to dependencies
 }
 
@@ -19,6 +19,7 @@ version '1.0-SNAPSHOT'
 sourceCompatibility = 1.8
 
 repositories {
+    // TODO: weed out
     mavenLocal()
     mavenCentral()
     jcenter()
@@ -41,17 +42,17 @@ dependencies {
     testCompile "org.apache.maven:maven-model:3.5.4"
 }
 
-// defines plugin descriptor
+// plugin descriptor
 gradlePlugin {
     plugins {
         versionManipulationPlugin {
-            id = 'org.jboss.set.gradle4.version-manipulation'
+            id = 'org.jboss.set.gradle.version-manipulation-plugin'
             implementationClass = 'org.jboss.set.gradle4.versionmanipulation.VersionManipulationPlugin'
         }
     }
 }
 
-// defines separate source set and task for functional tests
+// separate source set and task for functional tests
 
 sourceSets {
     functionalTest {
@@ -71,3 +72,30 @@ task functionalTest(type: Test) {
 }
 
 check.dependsOn functionalTest
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        // publishing in PNC
+        maven {
+            name = "PNC"
+            url = System.getProperty('AProxDeployUrl')
+            credentials(HttpHeaderCredentials) {
+                name = "Authorization"
+                value = "Bearer " + System.getProperty('accessToken')
+            }
+            authentication {
+                header(HttpHeaderAuthentication)
+            }
+        }
+    }
+}
+
+task install {
+    description 'Publishes to maven local repository'
+    dependsOn publishToMavenLocal
+}
