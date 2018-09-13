@@ -1,9 +1,9 @@
-package org.jboss.set.gradle4.versionmanipulation.internal;
+package org.jboss.set.gradle.versionmanipulation.internal;
 
 import org.gradle.api.Action;
 import org.gradle.api.XmlProvider;
-import org.jboss.set.gradle4.versionmanipulation.PluginLogger;
-import org.jboss.set.gradle4.versionmanipulation.configuration.ConfigurationStore;
+import org.jboss.set.gradle.versionmanipulation.PluginLogger;
+import org.jboss.set.gradle.versionmanipulation.configuration.AlignmentConfiguration;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -18,11 +18,13 @@ public class PomTransformer implements Action<XmlProvider> {
     private static final String DEPENDENCY = "dependency";
     private static final String GROUPID = "groupId";
     private static final String ARTIFACTID = "artifactId";
+    private static final String SCOPE = "scope";
+    private static final String DEFAULT_SCOPE = "compile";
 
-    private ConfigurationStore configurationStore;
+    private AlignmentConfiguration alignmentConfiguration;
 
-    public PomTransformer(ConfigurationStore configurationStore) {
-        this.configurationStore = configurationStore;
+    public PomTransformer(AlignmentConfiguration alignmentConfiguration) {
+        this.alignmentConfiguration = alignmentConfiguration;
     }
 
     @Override
@@ -75,7 +77,7 @@ public class PomTransformer implements Action<XmlProvider> {
             Node child = childNodes.item(i);
             if (child.getNodeType() == Node.ELEMENT_NODE
                     && VERSION.equals(child.getNodeName())) {
-                child.setTextContent(configurationStore.getProjectVersion());
+                child.setTextContent(alignmentConfiguration.getProjectVersion());
                 return;
             }
         }
@@ -109,6 +111,7 @@ public class PomTransformer implements Action<XmlProvider> {
             String group = null;
             String name = null;
             String version = null;
+            String scope = DEFAULT_SCOPE;
             Node versionNode = null;
             for (int j = 0; j < dependencyNode.getChildNodes().getLength(); j++) {
                 Node child = dependencyNode.getChildNodes().item(j);
@@ -124,6 +127,9 @@ public class PomTransformer implements Action<XmlProvider> {
                             version = child.getTextContent();
                             versionNode = child;
                             break;
+                        case SCOPE:
+                            scope = child.getTextContent();
+                            break;
                     }
                 }
             }
@@ -134,7 +140,7 @@ public class PomTransformer implements Action<XmlProvider> {
             }
 
             // modify version
-            String newVersion = configurationStore.getDependencyVersion(group, name);
+            String newVersion = alignmentConfiguration.getDependencyVersion(group, name, scope);
             if (newVersion != null) {
                 PluginLogger.ROOT_LOGGER.infof("Overriding version of %s:%s:%s to %s",
                         group, name, version, newVersion);

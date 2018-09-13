@@ -1,4 +1,4 @@
-package org.jboss.set.gradle4.versionmanipulation;
+package org.jboss.set.gradle.versionmanipulation;
 
 import java.io.File;
 
@@ -15,29 +15,38 @@ import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin;
 import org.gradle.api.tasks.Upload;
 import org.gradle.api.tasks.bundling.Jar;
-import org.jboss.set.gradle4.versionmanipulation.configuration.ConfigurationStore;
-import org.jboss.set.gradle4.versionmanipulation.configuration.PropertiesConfigurationStore;
-import org.jboss.set.gradle4.versionmanipulation.internal.DependencyResolutionApplier;
-import org.jboss.set.gradle4.versionmanipulation.internal.PomTransformer;
+import org.jboss.set.gradle.versionmanipulation.configuration.AlignmentConfiguration;
+import org.jboss.set.gradle.versionmanipulation.configuration.MavenPomAlignmentConfiguration;
+import org.jboss.set.gradle.versionmanipulation.internal.DependencyResolutionApplier;
+import org.jboss.set.gradle.versionmanipulation.internal.PomTransformer;
+import org.jboss.set.gradle.versionmanipulation.task.GenerateAlignmentPomTask;
 
+@SuppressWarnings("unused")
 public class VersionManipulationPlugin implements Plugin<ProjectInternal> {
 
     private static final String CONFIG_FILE_NAME = "overrideVersions.properties";
 
-    private ConfigurationStore configurationStore;
+    private AlignmentConfiguration alignmentConfiguration;
 
     @Override
     public void apply(ProjectInternal project) {
         PluginLogger.ROOT_LOGGER.infof("Applying VersionManipulationPlugin to project %s", project.getName());
 
-        configurationStore = new PropertiesConfigurationStore(new File(project.getRootProject().getRootDir(), CONFIG_FILE_NAME));
+        // TODO: might be best to separate "generateAlignmentPom" task into separate plugin, since it needs to see original setting,
+        // TODO: for now just don't do any overriding if this task is requested
+        project.getTasks().create(GenerateAlignmentPomTask.NAME, GenerateAlignmentPomTask.class);
+        if (project.getGradle().getStartParameter().getTaskNames().contains(GenerateAlignmentPomTask.NAME)) {
+            PluginLogger.ROOT_LOGGER.infof("Generating pom.xml for project %s", project.getName());
+        } else {
+            //alignmentConfiguration = new PropertiesAlignmentConfiguration(new File(project.getRootProject().getRootDir(), CONFIG_FILE_NAME));
+            alignmentConfiguration = new MavenPomAlignmentConfiguration(new File(project.getProjectDir(), "pom.xml"));
 
-        overrideProjectVersion(project);
-        project.getConfigurations().all(new DependencyResolutionApplier(project, configurationStore));
-        configureUploadTasks(project);
-        configurePublications(project);
-        configureOsgiManifest(project);
-
+            overrideProjectVersion(project);
+            project.getConfigurations().all(new DependencyResolutionApplier(project, alignmentConfiguration));
+            configureUploadTasks(project);
+            configurePublications(project);
+            configureOsgiManifest(project);
+        }
     }
 
     /**
@@ -47,7 +56,14 @@ public class VersionManipulationPlugin implements Plugin<ProjectInternal> {
         project.afterEvaluate(new Action<Project>() {
             @Override
             public void execute(Project project) {
-                project.setVersion(configurationStore.getProjectVersion());
+                String targetVersion = alignmentConfiguration.getProjectVersion();
+                if (targetVersion != null && !targetVersion.equals(project.getVersion())) {
+                    PluginLogger.ROOT_LOGGER.infof("Overriding project version from %s to %s on project %s",
+                            project.getVersion(), targetVersion, project.getName());
+                    project.setVersion(targetVersion);
+                } else {
+                    PluginLogger.ROOT_LOGGER.infof("No change on project version on project %s", project.getName());
+                }
             }
         });
     }
@@ -62,7 +78,7 @@ public class VersionManipulationPlugin implements Plugin<ProjectInternal> {
                 upload.getRepositories().withType(MavenResolver.class).all(new Action<MavenResolver>() {
                     @Override
                     public void execute(MavenResolver resolver) {
-                        resolver.getPom().withXml(new PomTransformer(configurationStore));
+                        resolver.getPom().withXml(new PomTransformer(alignmentConfiguration));
                     }
                 });
             }
@@ -85,7 +101,7 @@ public class VersionManipulationPlugin implements Plugin<ProjectInternal> {
                             @Override
                             public void execute(MavenPublication mavenPublication) {
                                 if (mavenPublication.getPom() != null) {
-                                    mavenPublication.getPom().withXml(new PomTransformer(configurationStore));
+                                    mavenPublication.getPom().withXml(new PomTransformer(alignmentConfiguration));
                                 }
                             }
                         });
@@ -110,10 +126,10 @@ public class VersionManipulationPlugin implements Plugin<ProjectInternal> {
                             PluginLogger.ROOT_LOGGER.debugf("Overriding OsgiManifest");
                             OsgiManifest manifest = (OsgiManifest) jar.getManifest();
                             if (manifest.getInstructions().containsKey("Implementation-Version")) {
-                                manifest.instructionReplace("Implementation-Version", configurationStore.getProjectVersion());
+                                manifest.instructionReplace("Implementation-Version", alignmentConfiguration.getProjectVersion());
                             }
                             if (manifest.getInstructions().containsKey("Specification-Version")) {
-                                manifest.instructionReplace("Specification-Version", configurationStore.getProjectVersion());
+                                manifest.instructionReplace("Specification-Version", alignmentConfiguration.getProjectVersion());
                             }
                         } else if (jar.getManifest() instanceof DefaultManifest) {
                             PluginLogger.ROOT_LOGGER.debugf("Overriding DefaultManifest");

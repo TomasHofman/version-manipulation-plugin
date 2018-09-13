@@ -28,18 +28,23 @@ repositories {
 
 ext {
     jbossLoggingVersion = "3.3.2.Final"
-    mavenVersion = "3.0.4"
+    jbossLoggingAnnotationsVersion = "2.1.0.Final"
+    mavenVersion = "3.5.4"
 }
 
 dependencies {
     compile localGroovy()
     compile "org.apache.maven:maven-model:$mavenVersion"
-
+    compile "org.apache.maven:maven-model-builder:$mavenVersion"
     compile "org.jboss.logging:jboss-logging:$jbossLoggingVersion"
+    compile "org.jboss.logging:jboss-logging-annotations:$jbossLoggingAnnotationsVersion"
+
+    annotationProcessor "org.jboss.logging:jboss-logging:$jbossLoggingVersion"
+    annotationProcessor "org.jboss.logging:jboss-logging-annotations:$jbossLoggingAnnotationsVersion"
+    annotationProcessor "org.jboss.logging:jboss-logging-processor:$jbossLoggingAnnotationsVersion"
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile gradleTestKit()
-    testCompile "org.apache.maven:maven-model:3.5.4"
 }
 
 // plugin descriptor
@@ -47,7 +52,7 @@ gradlePlugin {
     plugins {
         versionManipulationPlugin {
             id = 'org.jboss.set.gradle.version-manipulation-plugin'
-            implementationClass = 'org.jboss.set.gradle4.versionmanipulation.VersionManipulationPlugin'
+            implementationClass = 'org.jboss.set.gradle.versionmanipulation.VersionManipulationPlugin'
         }
     }
 }

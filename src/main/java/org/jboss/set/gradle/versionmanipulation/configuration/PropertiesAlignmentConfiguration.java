@@ -1,25 +1,26 @@
-package org.jboss.set.gradle4.versionmanipulation.configuration;
+package org.jboss.set.gradle.versionmanipulation.configuration;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Properties;
 
-import org.jboss.set.gradle4.versionmanipulation.PluginLogger;
+import org.jboss.set.gradle.versionmanipulation.PluginLogger;
 
 /**
  * Loads alignment configuration from a property file.
  */
-public class PropertiesConfigurationStore implements ConfigurationStore {
+public class PropertiesAlignmentConfiguration implements AlignmentConfiguration {
 
     private static final String PROJECT_VERSION_PROPERTY = "project.version";
 
     private Properties properties = new Properties();
 
-    public PropertiesConfigurationStore(File configFile) {
+    public PropertiesAlignmentConfiguration(File configFile) {
         try {
             if (!configFile.exists()) {
-                PluginLogger.ROOT_LOGGER.errorf("Config location '%s' doesn't exist.", configFile.getPath());
+                PluginLogger.ROOT_LOGGER.warnf("Config location '%s' doesn't exist, no alignments will be performed.",
+                        configFile.getPath());
             } else if (!configFile.isFile()) {
                 PluginLogger.ROOT_LOGGER.errorf("Config location '%s' is not a file.", configFile.getPath());
             } else {
@@ -31,22 +32,17 @@ public class PropertiesConfigurationStore implements ConfigurationStore {
     }
 
     @Override
-    public boolean overrideProjectVersion() {
-        return getProjectVersion() != null;
-    }
-
-    @Override
-    public boolean overrideDependencyVersion(String group, String name) {
-        return getDependencyVersion(group, name) != null;
-    }
-
-    @Override
     public String getProjectVersion() {
         return properties.getProperty(PROJECT_VERSION_PROPERTY);
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @param configuration currently ignored
+     */
     @Override
-    public String getDependencyVersion(String group, String name) {
+    public String getDependencyVersion(String group, String name, String configuration) {
         return properties.getProperty(group + ":" + name);
     }
 }

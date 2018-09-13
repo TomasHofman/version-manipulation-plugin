@@ -1,4 +1,4 @@
-package org.jboss.set.gradle4.versionmanipulation.functionaltest;
+package org.jboss.set.gradle.versionmanipulation.functionaltest;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -17,7 +17,7 @@ import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
-import org.jboss.set.gradle4.versionmanipulation.functionaltest.utils.TestUtils;
+import org.jboss.set.gradle.versionmanipulation.functionaltest.utils.TestUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;

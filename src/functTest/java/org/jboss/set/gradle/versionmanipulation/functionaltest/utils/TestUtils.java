@@ -1,4 +1,4 @@
-package org.jboss.set.gradle4.versionmanipulation.functionaltest.utils;
+package org.jboss.set.gradle.versionmanipulation.functionaltest.utils;
 
 import java.io.File;
 import java.io.IOException;

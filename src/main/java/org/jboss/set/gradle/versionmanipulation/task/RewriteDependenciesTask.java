@@ -1,4 +1,4 @@
-package org.jboss.set.gradle4.versionmanipulation.internal;
+package org.jboss.set.gradle.versionmanipulation.task;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,8 +7,8 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
 import org.gradle.api.tasks.TaskAction;
-import org.jboss.set.gradle4.versionmanipulation.PluginLogger;
-import org.jboss.set.gradle4.versionmanipulation.configuration.ConfigurationStore;
+import org.jboss.set.gradle.versionmanipulation.PluginLogger;
+import org.jboss.set.gradle.versionmanipulation.configuration.AlignmentConfiguration;
 
 /**
  * This task tries to rewrite dependencies versions directly in gradle configurations.
@@ -22,16 +22,16 @@ public class RewriteDependenciesTask extends DefaultTask {
 
     public static final String NAME = "rewriteDependencies";
 
-    private ConfigurationStore configurationStore;
+    private AlignmentConfiguration alignmentConfiguration;
 
-    public void setConfigurationStore(ConfigurationStore configurationStore) {
-        this.configurationStore = configurationStore;
+    public void setAlignmentConfiguration(AlignmentConfiguration alignmentConfiguration) {
+        this.alignmentConfiguration = alignmentConfiguration;
     }
 
     @SuppressWarnings("unused")
     @TaskAction
     public void perform() {
-        if (configurationStore == null) {
+        if (alignmentConfiguration == null) {
             PluginLogger.ROOT_LOGGER.warnf("Task %s hasn't been configured.", NAME);
             return;
         }
@@ -40,10 +40,11 @@ public class RewriteDependenciesTask extends DefaultTask {
     }
 
     private void overrideProjectVersion() {
-        if (configurationStore.overrideProjectVersion()) {
+        String targetVersion = alignmentConfiguration.getProjectVersion();
+        if (targetVersion != null) {
             PluginLogger.ROOT_LOGGER.infof("Setting project version for project '%s' to '%s'",
-                    getProject().getName(), configurationStore.getProjectVersion());
-            getProject().getProject().setVersion(configurationStore.getProjectVersion());
+                    getProject().getName(), targetVersion);
+            getProject().getProject().setVersion(targetVersion);
         }
     }
 
@@ -52,7 +53,7 @@ public class RewriteDependenciesTask extends DefaultTask {
         getProject().getConfigurations().forEach(configuration -> {
             PluginLogger.ROOT_LOGGER.infof("Found configuration %s", configuration.getName());
 
-            // collect all deps into a list
+            // collect all dependencies into a list
             List<Dependency> dependencies = new ArrayList<>();
             configuration.getDependencies().forEach(dependency -> {
                 PluginLogger.ROOT_LOGGER.infof("Found dependency %s:%s:%s",
@@ -62,7 +63,8 @@ public class RewriteDependenciesTask extends DefaultTask {
 
             // and override in separate loop to avoid parallel modification exception
             for (Dependency dependency : dependencies) {
-                String newVersion = configurationStore.getDependencyVersion(dependency.getGroup(), dependency.getName());
+                String newVersion = alignmentConfiguration.getDependencyVersion(
+                        dependency.getGroup(), dependency.getName(), configuration.getName());
                 if (newVersion != null) {
                     PluginLogger.ROOT_LOGGER.infof("Overriding dependency version from %s:%s:%s to %s",
                             dependency.getGroup(), dependency.getName(), dependency.getVersion(), newVersion);
