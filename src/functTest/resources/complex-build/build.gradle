@@ -1,4 +1,7 @@
 plugins {
+    // including this plugin directly instead of by an init script, which allows to use the freshly build version
+    id 'version-manipulation'
+
     id 'java'
     id 'osgi'
     id 'maven-publish'
@@ -46,4 +49,11 @@ jar {
         from { generatePomFileForMavenPublication }
         rename ".*", "pom.xml"
     }
+}
+
+gradle.buildFinished { buildResult ->
+    // verify that publishing repository was created
+    println "Number of publishing repositories: " + publishing.repositories.size()
+    publishing.repositories.each {println it.name + ": " + it.url}
+    assert publishing.repositories.size() == 1
 }

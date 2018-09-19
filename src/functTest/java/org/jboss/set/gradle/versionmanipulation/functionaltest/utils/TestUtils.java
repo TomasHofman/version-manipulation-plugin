@@ -8,7 +8,6 @@ import java.nio.file.Paths;
 
 import org.gradle.internal.impldep.com.google.common.io.Files;
 import org.junit.Assert;
-import org.junit.rules.TemporaryFolder;
 
 public final class TestUtils {
 
@@ -22,8 +21,13 @@ public final class TestUtils {
         Files.copy(new File(source.toURI()), destination);
     }
 
-    public static void copyFileToFolder(URL source, File targetDirectory) throws IOException, URISyntaxException {
+    public static void copyFileToDirectory(URL source, File targetDirectory) throws IOException, URISyntaxException {
         String fileName = Paths.get(source.getFile()).getFileName().toString();
         copyFile(source, new File(targetDirectory, fileName));
+    }
+
+    public static void copyResourceToDirectory(String resource, File targetDirectory) throws IOException, URISyntaxException {
+        URL url = TestUtils.class.getClassLoader().getResource(resource);
+        copyFileToDirectory(url, targetDirectory);
     }
 }

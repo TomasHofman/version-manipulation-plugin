@@ -51,7 +51,7 @@ dependencies {
 gradlePlugin {
     plugins {
         versionManipulationPlugin {
-            id = 'org.jboss.set.gradle.version-manipulation-plugin'
+            id = 'version-manipulation'
             implementationClass = 'org.jboss.set.gradle.versionmanipulation.VersionManipulationPlugin'
         }
     }

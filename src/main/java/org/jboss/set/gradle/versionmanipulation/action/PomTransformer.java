@@ -1,4 +1,4 @@
-package org.jboss.set.gradle.versionmanipulation.internal;
+package org.jboss.set.gradle.versionmanipulation.action;
 
 import org.gradle.api.Action;
 import org.gradle.api.XmlProvider;
@@ -65,23 +65,6 @@ public class PomTransformer implements Action<XmlProvider> {
                 });
             }
         });*/
-    }
-
-    /**
-     * @deprecated This breaks maven-publish plugin, which validates publication identity before publishing.
-     */
-    @Deprecated
-    private void transformProjectVersion(XmlProvider xmlProvider) {
-        NodeList childNodes = xmlProvider.asElement().getChildNodes();
-        for (int i = 0; i < childNodes.getLength(); i++) {
-            Node child = childNodes.item(i);
-            if (child.getNodeType() == Node.ELEMENT_NODE
-                    && VERSION.equals(child.getNodeName())) {
-                child.setTextContent(alignmentConfiguration.getProjectVersion());
-                return;
-            }
-        }
-        PluginLogger.ROOT_LOGGER.errorf("Project <version> tag not found when transforming Maven POM.");
     }
 
     private void transformDependencies(XmlProvider xmlProvider) {

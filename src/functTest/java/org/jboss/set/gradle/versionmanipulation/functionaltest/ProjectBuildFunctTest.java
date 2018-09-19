@@ -4,8 +4,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
-import java.net.URL;
+import java.util.Arrays;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -17,7 +18,9 @@ import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
+import org.jboss.set.gradle.versionmanipulation.action.PublishingRepositoryConfigurer;
 import org.jboss.set.gradle.versionmanipulation.functionaltest.utils.TestUtils;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -35,29 +38,31 @@ public class ProjectBuildFunctTest {
     public void setup() throws IOException, URISyntaxException {
         tempDir.create();
         projectDir = tempDir.newFolder("testproject");
+        System.out.println(String.format("Preparing project in %s", projectDir.getPath()));
 
-        System.out.println(projectDir.getPath());
+        TestUtils.copyResourceToDirectory("complex-build/build.gradle", projectDir);
+        TestUtils.copyResourceToDirectory("complex-build/libraries.gradle", projectDir);
+        TestUtils.copyResourceToDirectory("complex-build/init.gradle", projectDir);
+        TestUtils.copyResourceToDirectory("complex-build/overrideVersions.properties", projectDir);
+        TestUtils.copyResourceToDirectory("complex-build/pom.xml", projectDir);
+        TestUtils.copyResourceToDirectory("complex-build/HelloWorld.java", new File(projectDir, "src/main/java/"));
 
-        URL buildFile = getClass().getClassLoader().getResource("build.gradle");
-        URL librariesFile = getClass().getClassLoader().getResource("libraries.gradle");
-        URL initFile = getClass().getClassLoader().getResource("init.gradle");
-        URL propertyFile = getClass().getClassLoader().getResource("overrideVersions.properties");
-        URL javaFile = getClass().getClassLoader().getResource("HelloWorld.java");
-
-        TestUtils.copyFileToFolder(buildFile, projectDir);
-        TestUtils.copyFileToFolder(librariesFile, projectDir);
-        TestUtils.copyFileToFolder(initFile, projectDir);
-        TestUtils.copyFileToFolder(propertyFile, projectDir);
-        TestUtils.copyFile(javaFile, new File(projectDir, "src/main/java/HelloWorld.java"));
+        System.setProperty(PublishingRepositoryConfigurer.URL_SYSTEM_PROPERTY, "http://localhost/testurl");
     }
-
+    @After
+    public void tearDown() {
+        System.clearProperty(PublishingRepositoryConfigurer.URL_SYSTEM_PROPERTY);
+    }
 
     @Test
     public void test() throws IOException, XmlPullParserException {
+        String[] arguments = {"build", "install", "--info", "--stacktrace"/*, "-I", "init.gradle"*/};
+        System.out.println(String.format("Building with arguments %s", Arrays.toString(arguments)));
         BuildResult result = GradleRunner.create()
                 .withProjectDir(projectDir)
-                .withArguments("build", "install", "-I", "init.gradle")
+                .withArguments(arguments)
                 .withPluginClasspath()
+                .forwardOutput()
                 .build();
 
         // build task should be successful
@@ -83,26 +88,43 @@ public class ProjectBuildFunctTest {
         Assert.assertTrue(jarFile.exists());
 
         // check that pom.xml is included in the jar
-        ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(jarFile));
-        ZipEntry pomEntry = null;
-        while (zipInputStream.available() != 0) {
-            ZipEntry entry = zipInputStream.getNextEntry();
-            System.out.println(entry == null ? null : entry.getName());
-            if (entry != null && "META-INF/maven/pom.xml".equals(entry.getName())) {
-                pomEntry = entry;
+        try (ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(jarFile))) {
+            ZipEntry pomEntry = null;
+            while (zipInputStream.available() != 0) {
+                ZipEntry entry = zipInputStream.getNextEntry();
+                if (entry != null && "META-INF/maven/pom.xml".equals(entry.getName())) {
+                    pomEntry = entry;
+                    break;
+                }
             }
+            Assert.assertNotNull(pomEntry);
+            // check pom.xml packaged in the jar
+            checkPomXml(zipInputStream);
         }
-        Assert.assertNotNull(pomEntry);
     }
 
     /**
      * Verifies that project and dependency versions were overridden.
+     *
      * @param pomFile pom.xml file
      */
     private void checkPomXml(File pomFile) throws IOException, XmlPullParserException {
+        checkPomXml(new FileInputStream(pomFile));
+    }
+
+    /**
+     * Verifies that project and dependency versions were overridden.
+     *
+     * @param is pom.xml input stream
+     */
+    private void checkPomXml(InputStream is) throws IOException, XmlPullParserException {
         MavenXpp3Reader reader = new MavenXpp3Reader();
-        Model pom = reader.read(new FileReader(pomFile));
+        Model pom = reader.read(is);
+
+        // check project version
         Assert.assertEquals("1.0.1-redhat-1", pom.getVersion());
+
+        // check dependency version
         Dependency dependency = pom.getDependencies().get(0);
         Assert.assertEquals("jboss-logging", dependency.getArtifactId());
         Assert.assertEquals("3.3.1.Final-redhat-1", dependency.getVersion());

@@ -1,3 +1,5 @@
+// just an example, currently not used during tests, because an init script doesn't seem to be able to use project classpath
+
 initscript {
     repositories {
         mavenLocal()
@@ -5,7 +7,7 @@ initscript {
     }
 
     dependencies {
-        classpath "org.jboss.set.gradle:version-manipulation-plugin:1.0.0.beta-2-redhat-00001"
+        classpath "org.jboss.set.gradle:version-manipulation-plugin:1.0-SNAPSHOT"
     }
 }
 
