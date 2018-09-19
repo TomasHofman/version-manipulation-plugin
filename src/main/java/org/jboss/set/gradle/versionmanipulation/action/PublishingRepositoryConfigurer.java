@@ -6,12 +6,33 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.credentials.HttpHeaderCredentials;
 import org.gradle.api.publish.PublishingExtension;
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin;
+import org.gradle.authentication.http.HttpHeaderAuthentication;
 import org.jboss.set.gradle.versionmanipulation.PluginLogger;
 
 /**
- * Adds a "maven-publish" plugin publishing repository specific to PNC environment.
+ * Adds a publishing repository specific to PNC environment.
  * <p>
  * System properties "AProxDeployUrl" and "accessToken" has to be defined during build.
+ *
+ * Is equivalent to following gradle snippet:
+ *
+ * <pre>
+ * publishing {
+ *         repositories {
+ *             maven {
+ *                 name = "PNC"
+ *                 url = System.getProperty('AProxDeployUrl')
+ *                 credentials(HttpHeaderCredentials) {
+ *                     name = "Authorization"
+ *                     value = "Bearer " + System.getProperty('accessToken')
+ *                 }
+ *                 authentication {
+ *                     header(HttpHeaderAuthentication)
+ *                 }
+ *             }
+ *         }
+ *     }
+ * </pre>
  */
 public class PublishingRepositoryConfigurer implements Action<Project> {
 
@@ -27,10 +48,11 @@ public class PublishingRepositoryConfigurer implements Action<Project> {
                     MavenArtifactRepository repo = publishingExtension.getRepositories().maven(repository -> {
                         repository.setName("PNC");
                         repository.setUrl(pncDeployUrl);
-                        repository.credentials(HttpHeaderCredentials.class, passwordCredentials -> {
-                            passwordCredentials.setName("Authorization");
-                            passwordCredentials.setValue("Bearer " + System.getProperty(ACCESS_TOKEN_SYSTEM_PROPERTY));
+                        repository.credentials(HttpHeaderCredentials.class, cred -> {
+                            cred.setName("Authorization");
+                            cred.setValue("Bearer " + System.getProperty(ACCESS_TOKEN_SYSTEM_PROPERTY));
                         });
+                        repository.getAuthentication().create("header", HttpHeaderAuthentication.class);
                     });
                     PluginLogger.ROOT_LOGGER.infof("Added publishing repository %s", repo);
                 });
