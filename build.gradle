@@ -38,6 +38,7 @@ dependencies {
     compile "org.apache.maven:maven-model-builder:$mavenVersion"
     compile "org.jboss.logging:jboss-logging:$jbossLoggingVersion"
     compile "org.jboss.logging:jboss-logging-annotations:$jbossLoggingAnnotationsVersion"
+    compile "commons-lang:commons-lang:2.6"
 
     annotationProcessor "org.jboss.logging:jboss-logging:$jbossLoggingVersion"
     annotationProcessor "org.jboss.logging:jboss-logging-annotations:$jbossLoggingAnnotationsVersion"
