@@ -1,0 +1,34 @@
+plugins {
+    id "version-manipulation"
+}
+
+apply from: './libraries.gradle'
+
+allprojects {
+    // including this plugin directly instead of by an init script, which allows to use the freshly build version
+    apply plugin: 'version-manipulation'
+
+    group 'org.jboss.set.gradle'
+    version '1.0-SNAPSHOT'
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+}
+
+project(':subproject') {
+    apply plugin: 'java'
+
+    sourceCompatibility = 1.8
+
+    dependencies {
+        compile group: 'org.jboss.logging', name: 'jboss-logging', version: jbossLoggingVersion
+    }
+}
+
+afterEvaluate {
+    // generateAlignmentPom must be registered only in the root project
+    assert tasks.findByName('generateAlignmentPom') != null
+    assert project('subproject').tasks.findByName('generateAlignmentPom') == null
+}

@@ -10,7 +10,7 @@ plugins {
 
 apply from: './libraries.gradle'
 
-group 'org.jboss.set.gradle44'
+group 'org.jboss.set.gradle'
 version '1.0-SNAPSHOT'
 
 sourceCompatibility = 1.8
@@ -52,8 +52,10 @@ jar {
 }
 
 gradle.buildFinished { buildResult ->
-    // verify that publishing repository was created
-    println "Number of publishing repositories: " + publishing.repositories.size()
-    publishing.repositories.each {println it.name + ": " + it.url}
-    assert publishing.repositories.size() == 1
+    if (gradle.taskGraph.allTasks.contains("build")) {
+        // verify that publishing repository was created
+        println "Number of publishing repositories: " + publishing.repositories.size()
+        publishing.repositories.each { println it.name + ": " + it.url }
+        assert publishing.repositories.size() == 1
+    }
 }

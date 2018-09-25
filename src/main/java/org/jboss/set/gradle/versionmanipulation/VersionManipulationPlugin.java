@@ -23,9 +23,13 @@ public class VersionManipulationPlugin implements Plugin<ProjectInternal> {
     public void apply(ProjectInternal internalProject) {
         PluginLogger.ROOT_LOGGER.infof("Applying VersionManipulationPlugin to project %s", internalProject.getName());
 
+        // register pom generating task only to the root project
+        if (internalProject.getRootProject().getTasks().findByName(GenerateAlignmentPomTask.NAME) == null) {
+            internalProject.getRootProject().getTasks().create(GenerateAlignmentPomTask.NAME, GenerateAlignmentPomTask.class);
+        }
+
         // TODO: might be best to separate "generateAlignmentPom" task into separate plugin, since it needs to see original setting,
         // TODO: for now just don't do any overriding if this task is requested
-        internalProject.getTasks().create(GenerateAlignmentPomTask.NAME, GenerateAlignmentPomTask.class);
         if (internalProject.getGradle().getStartParameter().getTaskNames().contains(GenerateAlignmentPomTask.NAME)) {
             PluginLogger.ROOT_LOGGER.infof("Generating pom.xml for project %s", internalProject.getName());
         } else {

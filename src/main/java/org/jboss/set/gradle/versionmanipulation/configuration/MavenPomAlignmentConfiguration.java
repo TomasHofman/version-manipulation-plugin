@@ -21,9 +21,9 @@ public class MavenPomAlignmentConfiguration implements AlignmentConfiguration {
             if (mavenPom.exists()) {
                 PluginLogger.ROOT_LOGGER.infof("Building alignment configuration from file: %s", mavenPom.getPath());
 
-                DefaultModelBuildingRequest request = new DefaultModelBuildingRequest();
-                request.setPomFile(mavenPom);
-                request.setProcessPlugins(false);
+                DefaultModelBuildingRequest request = new DefaultModelBuildingRequest()
+                    .setPomFile(mavenPom)
+                    .setProcessPlugins(false);
 
                 DefaultModelBuilder builder = new DefaultModelBuilderFactory().newInstance();
                 ModelBuildingResult result = builder.build(request);
